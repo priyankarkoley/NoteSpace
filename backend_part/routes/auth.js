@@ -3,6 +3,7 @@ const User = require('../models/User');
 const {body, validationResult} = require('express-validator');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+var jwt = require('jsonwebtoken');
 
 //Create An User using POST /api/auth/createuser | NO LOGIN
 router.post('/createuser',
@@ -23,17 +24,20 @@ router.post('/createuser',
             if(user){
                 return res.status(400).json({error : "Email already in use"});
             }
-            else{
-                // CREATING NEW USER IN DB
-                const salt = await bcrypt.genSalt(10);
-                let secpass = await bcrypt.hash(req.body.password, salt);
-                user = await User.create({
-                    name: req.body.name,
-                    email: req.body.email,
-                    password : secpass
-                });
-                res.json(user);
+            // CREATING NEW USER IN DB
+            const salt = await bcrypt.genSalt(10);
+            let secpass = await bcrypt.hash(req.body.password, salt);
+            user = await User.create({
+                name: req.body.name,
+                email: req.body.email,
+                password : secpass
+            });
+            // CREATING Auth Tocken for user
+            data = {
+                user:{id: user.id}
             }
+            var authTocken = jwt.sign(data, 'my_secret_password');
+                res.json({authTocken});
         } catch (error) {
             console.error(error.message);
             res.status(500).send("Internal server error");
@@ -42,4 +46,4 @@ router.post('/createuser',
 )
         
         
-        module.exports = router;
+module.exports = router;
