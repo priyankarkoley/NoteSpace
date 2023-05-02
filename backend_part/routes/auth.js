@@ -5,7 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
 
-//Create An User using POST /api/auth/createuser | NO LOGIN
+//Create An User, using POST /api/auth/createuser | NO LOGIN
 router.post('/createuser',
     [
         body('name', 'Enter A valid name(atleast 2 characters)').isLength({min : 2}),
@@ -16,7 +16,7 @@ router.post('/createuser',
         // show 400 error if any
         const err = validationResult(req);
         if(!err.isEmpty()){
-            return res.status(400).json({errors : err.array()[0].msg});
+            return res.status(400).json({errors : err.array(), 1:1});
         }
         try {
             //check if email exists
@@ -32,7 +32,7 @@ router.post('/createuser',
                 email: req.body.email,
                 password : secpass
             });
-            // CREATING Auth Tocken for user
+            //Generate Authorization Token
             data = {
                 user:{id: user.id}
             }
@@ -45,5 +45,40 @@ router.post('/createuser',
     }
 )
         
-        
+//Login For Users, using POST /api/auth/login | NO LOGIN
+router.post('/login',
+    [
+        body('email',  'Enter A valid email').isEmail(),
+        body('password', "Passwword can't be blank").exists()
+    ],
+    async (req, res) => {
+        // show 400 error if any
+        const err = validationResult(req);
+        if(!err.isEmpty()){
+            return res.status(400).json({errors : "Invalid Credenetials"});
+        }
+        try{
+            const {email, password} = req.body;
+            const user = await User.findOne({email})
+            //Check if User exists
+            if(!user){
+            return res.status(400).json({errors : "Invalid Creds[email]"});}
+            //Check if Password entered is right
+            const isRightPw = await bcrypt.compare(password, user.password);
+            if(!isRightPw){
+            return res.status(400).json({errors : "Invalid Creds[password]"});}
+            //Generate Authorization Token
+            const data = {
+                user:{id : user.id}
+            }
+            var authTocken = jwt.sign(data, 'my_secret_password');
+            res.json({authTocken});
+            
+        } catch (error) {
+            console.error(error.message);
+            res.status(500).send("Internal server error");
+        }
+    }
+)
+   ir log    
 module.exports = router;
