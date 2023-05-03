@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
+const fetchUser = require("./middlewares/fetchUser");
 
 //Create An User, using POST /api/auth/createuser | NO LOGIN
 router.post(
@@ -91,13 +92,7 @@ router.post(
 //Users Data when Logged In, using POST /api/auth/login | NO LOGIN
 router.post(
   "/getuser",
-  (req, res, next) => {
-    const token = req.header("token");
-    if (!token) res.status(401).send({ error: "Invalid Token" });
-    const data = jwt.verify(token, "my_secret_password");
-    req.user = data.user;
-    next();
-  },
+  fetchUser,
   async (req, res) => {
     try {
       const userid = req.user.id;
