@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 var jwt = require("jsonwebtoken");
 const fetchUser = require("./middlewares/fetchUser");
 
+//---------------------------------------------------------------------------
 //Create An User, using POST /api/auth/createuser | NO LOGIN
 router.post(
   "/createuser",
@@ -51,6 +52,7 @@ router.post(
   }
 );
 
+//---------------------------------------------------------------------------
 //Login For Users, using POST /api/auth/login | NO LOGIN
 router.post(
   "/login",
@@ -89,6 +91,7 @@ router.post(
   }
 );
 
+//---------------------------------------------------------------------------
 //Users Data when Logged In, using POST /api/auth/login | NO LOGIN
 router.post(
   "/getuser",
