@@ -1,14 +1,14 @@
-const express = require("express");
-const User = require("../models/User");
-const { body, validationResult } = require("express-validator");
-const router = express.Router();
-const bcrypt = require("bcrypt");
-var jwt = require("jsonwebtoken");
-const fetchUser = require("./middlewares/fetchUser");
+import { Router } from "express";
+import UserModel from "../models/User.js";
+import { body, validationResult } from "express-validator";
+import { genSalt, hash, compare } from "bcrypt";
+import { sign } from "jsonwebtoken";
+import fetchUser from "./middlewares/fetchUser.js";
 
+const auth_router = Router();
 //---------------------------------------------------------------------------
 //Create An User, using POST /api/auth/createuser | NO LOGIN
-router.post(
+auth_router.post(
   "/createuser",
   [
     body("name", "Enter A valid name(atleast 2 characters)").isLength({
@@ -27,14 +27,14 @@ router.post(
     }
     try {
       //check if email exists
-      let user = await User.findOne({ email: req.body.email });
+      let user = await UserModel.findOne({ email: req.body.email });
       if (user) {
         return res.status(400).json({ error: "Email already in use" });
       }
       // CREATING NEW USER IN DB
-      const salt = await bcrypt.genSalt(10);
-      let secpass = await bcrypt.hash(req.body.password, salt);
-      user = await User.create({
+      const salt = await genSalt(10);
+      let secpass = await hash(req.body.password, salt);
+      user = await UserModel.create({
         name: req.body.name,
         email: req.body.email,
         password: secpass,
@@ -43,7 +43,7 @@ router.post(
       data = {
         user: { id: user.id },
       };
-      var authTocken = jwt.sign(data, "my_secret_password");
+      var authTocken = sign(data, "my_secret_password");
       res.json({ authTocken });
     } catch (error) {
       console.error(error.message);
@@ -54,7 +54,7 @@ router.post(
 
 //---------------------------------------------------------------------------
 //Login For Users, using POST /api/auth/login | NO LOGIN
-router.post(
+auth_router.post(
   "/login",
   [
     body("email", "Enter A valid email").isEmail(),
@@ -68,13 +68,13 @@ router.post(
     }
     try {
       const { email, password } = req.body;
-      const user = await User.findOne({ email });
+      const user = await UserModel.findOne({ email });
       //Check if User exists
       if (!user) {
         return res.status(400).json({ errors: "Invalid Creds[email]" });
       }
       //Check if Password entered is right
-      const isRightPw = await bcrypt.compare(password, user.password);
+      const isRightPw = await compare(password, user.password);
       if (!isRightPw) {
         return res.status(400).json({ errors: "Invalid Creds[password]" });
       }
@@ -82,7 +82,7 @@ router.post(
       const data = {
         user: { id: user.id },
       };
-      var authTocken = jwt.sign(data, "my_secret_password");
+      var authTocken = sign(data, "my_secret_password");
       res.json({ authTocken });
     } catch (error) {
       console.error(error.message);
@@ -93,19 +93,15 @@ router.post(
 
 //---------------------------------------------------------------------------
 //Users Data when Logged In, using POST /api/auth/login | NO LOGIN
-router.post(
-  "/getuser",
-  fetchUser,
-  async (req, res) => {
-    try {
-      const userid = req.user.id;
-      const user = await User.findById(userid).select("-password");
-      res.status(200).json(user);
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).send("Internal server error");
-    }
+auth_router.post("/getuser", fetchUser, async (req, res) => {
+  try {
+    const userid = req.user.id;
+    const user = await UserModel.findById(userid).select("-password");
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send("Internal server error");
   }
-);
+});
 
-module.exports = router;
+export default auth_router;
